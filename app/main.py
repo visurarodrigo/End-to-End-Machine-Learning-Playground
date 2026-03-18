@@ -2,6 +2,9 @@ from io import BytesIO
 
 import pandas as pd
 from fastapi import FastAPI, File, HTTPException, UploadFile
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import train_test_split
 
 
 app = FastAPI()
@@ -56,6 +59,56 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, object]:
         else "No missing values detected in the dataset."
     )
     
+    # Train-test split preparation
+    target_column = "price"  # Hardcoded for now, can be parameterized later
+    if target_column not in df.columns:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}"
+        )
+    
+    # Split into features and target
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+    
+    # Train-test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    # Collect split information
+    split_info = {
+        "X_train_shape": list(X_train.shape),
+        "X_test_shape": list(X_test.shape),
+        "y_train_shape": list(y_train.shape),
+        "y_test_shape": list(y_test.shape),
+    }
+    
+    # Train Linear Regression model
+    model = LinearRegression()
+    model.fit(X_train, y_train)
+    
+    # Make predictions on test set
+    y_pred = model.predict(X_test)
+    
+    # Calculate Mean Squared Error
+    mse = float(mean_squared_error(y_test, y_pred))
+    
+    # Calculate residuals (prediction errors)
+    residuals = y_test.values - y_pred
+    
+    # Collect first 5 predictions for inspection
+    predictions_sample = {
+        "y_test_sample": y_test.iloc[:5].tolist(),
+        "y_pred_sample": y_pred[:5].tolist(),
+    }
+    
+    # Detailed prediction analysis with residuals
+    prediction_analysis = {
+        "explanation": "Residuals represent the difference between actual and predicted values (actual - predicted). Smaller residuals indicate better model performance.",
+        "actual_values": y_test.iloc[:5].tolist(),
+        "predicted_values": y_pred[:5].tolist(),
+        "residuals": residuals[:5].tolist(),
+    }
+    
     return {
         "filename": file.filename,
         "content_type": file.content_type or "unknown",
@@ -66,6 +119,11 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, object]:
         "total_missing_values": total_missing,
         "cleaning_status": cleaning_message,
         "preview": df.head(5).to_dict(orient="records"),
+        "target_column": target_column,
+        "train_test_split": split_info,
+        "mse": mse,
+        "predictions_sample": predictions_sample,
+        "prediction_analysis": prediction_analysis,
     }
 
 
