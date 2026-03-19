@@ -2,9 +2,10 @@ from io import BytesIO
 
 import pandas as pd
 from fastapi import FastAPI, File, HTTPException, UploadFile
-from sklearn.linear_model import LinearRegression
+from sklearn.linear_model import Lasso, LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
 
 app = FastAPI()
@@ -82,15 +83,102 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, object]:
         "y_test_shape": list(y_test.shape),
     }
     
-    # Train Linear Regression model
+    # Train baseline Linear Regression model (without feature scaling)
     model = LinearRegression()
     model.fit(X_train, y_train)
-    
-    # Make predictions on test set
+
+    # Make predictions on baseline test set
     y_pred = model.predict(X_test)
-    
-    # Calculate Mean Squared Error
-    mse = float(mean_squared_error(y_test, y_pred))
+
+    # Calculate baseline Mean Squared Error
+    original_mse = float(mean_squared_error(y_test, y_pred))
+
+    # Fit scaler only on training features, then transform train and test features
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    # Train a new Linear Regression model on scaled features
+    scaled_model = LinearRegression()
+    scaled_model.fit(X_train_scaled, y_train)
+
+    # Predict and evaluate using scaled test features
+    y_pred_scaled = scaled_model.predict(X_test_scaled)
+    scaled_mse = float(mean_squared_error(y_test, y_pred_scaled))
+
+    # Build polynomial features from training data and apply the same transform to test data
+    poly = PolynomialFeatures(degree=2, include_bias=False)
+    X_train_poly = poly.fit_transform(X_train)
+    X_test_poly = poly.transform(X_test)
+
+    # Scale polynomial features for stable optimization
+    poly_scaler = StandardScaler()
+    X_train_poly_scaled = poly_scaler.fit_transform(X_train_poly)
+    X_test_poly_scaled = poly_scaler.transform(X_test_poly)
+
+    # Train and evaluate polynomial regression model
+    poly_model = LinearRegression()
+    poly_model.fit(X_train_poly_scaled, y_train)
+    y_pred_poly = poly_model.predict(X_test_poly_scaled)
+    polynomial_mse = float(mean_squared_error(y_test, y_pred_poly))
+
+    # Train and evaluate regularized polynomial models
+    ridge_model = Ridge(alpha=1.0)
+    ridge_model.fit(X_train_poly_scaled, y_train)
+    y_pred_ridge = ridge_model.predict(X_test_poly_scaled)
+    ridge_mse = float(mean_squared_error(y_test, y_pred_ridge))
+
+    lasso_model = Lasso(alpha=0.1, max_iter=10000)
+    lasso_model.fit(X_train_poly_scaled, y_train)
+    y_pred_lasso = lasso_model.predict(X_test_poly_scaled)
+    lasso_mse = float(mean_squared_error(y_test, y_pred_lasso))
+
+    if scaled_mse < original_mse:
+        scaling_message = "Scaling improved model performance (lower MSE)."
+    elif scaled_mse > original_mse:
+        scaling_message = "Scaling did not improve model performance (higher MSE)."
+    else:
+        scaling_message = "Scaling produced the same model performance (equal MSE)."
+
+    if polynomial_mse < scaled_mse:
+        polynomial_message = "Polynomial regression improved performance compared to scaled linear regression."
+    elif polynomial_mse > scaled_mse:
+        polynomial_message = "Polynomial regression performed worse on test data and may indicate overfitting."
+    else:
+        polynomial_message = "Polynomial regression produced similar test performance to scaled linear regression."
+
+    best_regularized_name = "ridge" if ridge_mse <= lasso_mse else "lasso"
+    best_regularized_mse = min(ridge_mse, lasso_mse)
+
+    if best_regularized_mse < polynomial_mse:
+        regularization_message = (
+            f"Regularization improved performance versus polynomial regression alone; "
+            f"{best_regularized_name.capitalize()} achieved the lowest regularized MSE and likely reduced overfitting."
+        )
+    elif best_regularized_mse > polynomial_mse:
+        regularization_message = (
+            "Regularization did not improve test performance versus polynomial regression alone and may be too strong for this dataset."
+        )
+    else:
+        regularization_message = (
+            "Regularization produced similar performance to polynomial regression alone, with potential stability benefits."
+        )
+
+    model_mse_values = {
+        "original": original_mse,
+        "scaled": scaled_mse,
+        "polynomial": polynomial_mse,
+        "ridge": ridge_mse,
+        "lasso": lasso_mse,
+    }
+    model_comparison = {
+        "original_mse": original_mse,
+        "scaled_mse": scaled_mse,
+        "polynomial_mse": polynomial_mse,
+        "ridge_mse": ridge_mse,
+        "lasso_mse": lasso_mse,
+        "best_model_by_mse": min(model_mse_values, key=model_mse_values.get),
+    }
     
     # Calculate residuals (prediction errors)
     residuals = y_test.values - y_pred
@@ -121,7 +209,16 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, object]:
         "preview": df.head(5).to_dict(orient="records"),
         "target_column": target_column,
         "train_test_split": split_info,
-        "mse": mse,
+        "mse": original_mse,
+        "original_mse": original_mse,
+        "scaled_mse": scaled_mse,
+        "polynomial_mse": polynomial_mse,
+        "ridge_mse": ridge_mse,
+        "lasso_mse": lasso_mse,
+        "scaling_performance_message": scaling_message,
+        "polynomial_performance_message": polynomial_message,
+        "regularization_performance_message": regularization_message,
+        "model_comparison": model_comparison,
         "predictions_sample": predictions_sample,
         "prediction_analysis": prediction_analysis,
     }
