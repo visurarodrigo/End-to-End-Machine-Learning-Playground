@@ -2,14 +2,50 @@ from io import BytesIO
 
 import pandas as pd
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, mean_squared_error, precision_score, recall_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
+from sklearn.tree import DecisionTreeClassifier
 
 
 app = FastAPI()
+
+
+def _build_classification_metrics_response(
+    *,
+    message: str,
+    model_name: str,
+    y_test: pd.Series,
+    y_pred: object,
+) -> dict[str, object]:
+    """Build a consistent response payload for binary classification endpoints."""
+    accuracy = float(accuracy_score(y_test, y_pred))
+    precision = float(precision_score(y_test, y_pred, zero_division=0))
+    recall = float(recall_score(y_test, y_pred, zero_division=0))
+    f1 = float(f1_score(y_test, y_pred, zero_division=0))
+
+    cm = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+
+    return {
+        "message": message,
+        "model": model_name,
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "actual_values": y_test.iloc[:10].tolist(),
+        "predicted_values": y_pred[:10].tolist(),
+        "confusion_matrix": {
+            "true_negatives": int(tn),
+            "false_positives": int(fp),
+            "false_negatives": int(fn),
+            "true_positives": int(tp),
+        },
+    }
 
 
 @app.get("/")
@@ -265,30 +301,104 @@ async def train_classification_logistic(
     pipeline.fit(X_train, y_train)
     y_pred = pipeline.predict(X_test)
 
-    accuracy = float(accuracy_score(y_test, y_pred))
-    precision = float(precision_score(y_test, y_pred, zero_division=0))
-    recall = float(recall_score(y_test, y_pred, zero_division=0))
-    f1 = float(f1_score(y_test, y_pred, zero_division=0))
+    return _build_classification_metrics_response(
+        message="Logistic regression training completed successfully.",
+        model_name="LogisticRegression",
+        y_test=y_test,
+        y_pred=y_pred,
+    )
 
-    cm = confusion_matrix(y_test, y_pred)
-    tn, fp, fn, tp = cm.ravel()
 
-    return {
-        "message": "Logistic regression training completed successfully.",
-        "model": "LogisticRegression",
-        "accuracy": accuracy,
-        "precision": precision,
-        "recall": recall,
-        "f1_score": f1,
-        "actual_values": y_test.iloc[:10].tolist(),
-        "predicted_values": y_pred[:10].tolist(),
-        "confusion_matrix": {
-            "true_negatives": int(tn),
-            "false_positives": int(fp),
-            "false_negatives": int(fn),
-            "true_positives": int(tp),
-        },
-    }
+@app.post("/train-classification-decision-tree", summary="Train a Decision Tree classifier")
+async def train_classification_decision_tree(
+    file: UploadFile = File(...),
+    target_column: str = Form(...),
+    max_depth: int | None = Form(None),
+) -> dict[str, object]:
+    """Train a Decision Tree Classifier model from an uploaded CSV file."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are allowed.")
+
+    try:
+        file_bytes = await file.read()
+        df = pd.read_csv(BytesIO(file_bytes))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV file: {exc}") from exc
+
+    if target_column not in df.columns:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}",
+        )
+
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+    )
+
+    if max_depth is not None and max_depth <= 0:
+        raise HTTPException(status_code=400, detail="max_depth must be a positive integer when provided.")
+
+    model = DecisionTreeClassifier(random_state=42, max_depth=max_depth)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    response = _build_classification_metrics_response(
+        message="Decision tree training completed successfully.",
+        model_name="Decision Tree Classifier",
+        y_test=y_test,
+        y_pred=y_pred,
+    )
+    response["max_depth"] = max_depth
+    return response
+
+
+@app.post("/train-classification-random-forest", summary="Train a Random Forest classifier")
+async def train_classification_random_forest(
+    file: UploadFile = File(...),
+    target_column: str = Form(...),
+) -> dict[str, object]:
+    """Train a Random Forest Classifier model from an uploaded CSV file."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are allowed.")
+
+    try:
+        file_bytes = await file.read()
+        df = pd.read_csv(BytesIO(file_bytes))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV file: {exc}") from exc
+
+    if target_column not in df.columns:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}",
+        )
+
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+    )
+
+    model = RandomForestClassifier(n_estimators=100, random_state=42)
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    return _build_classification_metrics_response(
+        message="Random forest training completed successfully.",
+        model_name="Random Forest Classifier",
+        y_test=y_test,
+        y_pred=y_pred,
+    )
 
 
 if __name__ == "__main__":
