@@ -1,10 +1,11 @@
 from io import BytesIO
 
 import pandas as pd
-from fastapi import FastAPI, File, HTTPException, UploadFile
-from sklearn.linear_model import Lasso, LinearRegression, Ridge
-from sklearn.metrics import mean_squared_error
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, mean_squared_error, precision_score, recall_score
 from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 
 
@@ -221,6 +222,72 @@ async def upload_file(file: UploadFile = File(...)) -> dict[str, object]:
         "model_comparison": model_comparison,
         "predictions_sample": predictions_sample,
         "prediction_analysis": prediction_analysis,
+    }
+
+
+@app.post("/train-classification-logistic", summary="Train a Logistic Regression classifier")
+async def train_classification_logistic(
+    file: UploadFile = File(...),
+    target_column: str = Form(...),
+) -> dict[str, object]:
+    """Train a Logistic Regression model from an uploaded CSV file."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are allowed.")
+
+    try:
+        file_bytes = await file.read()
+        df = pd.read_csv(BytesIO(file_bytes))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV file: {exc}") from exc
+
+    if target_column not in df.columns:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}",
+        )
+
+    X = df.drop(columns=[target_column])
+    y = df[target_column]
+
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        test_size=0.2,
+        random_state=42,
+    )
+
+    pipeline = Pipeline(
+        steps=[
+            ("scaler", StandardScaler()),
+            ("model", LogisticRegression(max_iter=1000)),
+        ]
+    )
+    pipeline.fit(X_train, y_train)
+    y_pred = pipeline.predict(X_test)
+
+    accuracy = float(accuracy_score(y_test, y_pred))
+    precision = float(precision_score(y_test, y_pred, zero_division=0))
+    recall = float(recall_score(y_test, y_pred, zero_division=0))
+    f1 = float(f1_score(y_test, y_pred, zero_division=0))
+
+    cm = confusion_matrix(y_test, y_pred)
+    tn, fp, fn, tp = cm.ravel()
+
+    return {
+        "message": "Logistic regression training completed successfully.",
+        "model": "LogisticRegression",
+        "accuracy": accuracy,
+        "precision": precision,
+        "recall": recall,
+        "f1_score": f1,
+        "actual_values": y_test.iloc[:10].tolist(),
+        "predicted_values": y_pred[:10].tolist(),
+        "confusion_matrix": {
+            "true_negatives": int(tn),
+            "false_positives": int(fp),
+            "false_negatives": int(fn),
+            "true_positives": int(tp),
+        },
     }
 
 
