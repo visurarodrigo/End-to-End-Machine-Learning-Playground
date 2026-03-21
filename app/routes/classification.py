@@ -1,7 +1,6 @@
 from io import BytesIO
 
 import pandas as pd
-import tensorflow as tf
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from sklearn.model_selection import train_test_split
 
@@ -150,6 +149,14 @@ async def train_classification_neural_network(
     target_column: str = Form(...),
 ) -> dict[str, object]:
     """Train a TensorFlow neural network for binary classification from an uploaded CSV file."""
+    try:
+        import tensorflow as tf
+    except ImportError as exc:
+        raise HTTPException(
+            status_code=500,
+            detail="TensorFlow is not installed. Install tensorflow to use this endpoint.",
+        ) from exc
+
     file_bytes = await file.read()
     df = _read_csv_upload(file, file_bytes)
 
