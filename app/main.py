@@ -21,11 +21,15 @@ def _build_classification_metrics_response(
     *,
     message: str,
     model_name: str,
+    y_train: pd.Series,
+    y_train_pred: object,
     y_test: pd.Series,
     y_pred: object,
 ) -> dict[str, object]:
     """Build a consistent response payload for binary classification endpoints."""
-    accuracy = float(accuracy_score(y_test, y_pred))
+    train_accuracy = float(accuracy_score(y_train, y_train_pred))
+    test_accuracy = float(accuracy_score(y_test, y_pred))
+    accuracy_gap = train_accuracy - test_accuracy
     precision = float(precision_score(y_test, y_pred, zero_division=0))
     recall = float(recall_score(y_test, y_pred, zero_division=0))
     f1 = float(f1_score(y_test, y_pred, zero_division=0))
@@ -36,7 +40,9 @@ def _build_classification_metrics_response(
     return {
         "message": message,
         "model": model_name,
-        "accuracy": accuracy,
+        "train_accuracy": train_accuracy,
+        "test_accuracy": test_accuracy,
+        "accuracy_gap": accuracy_gap,
         "precision": precision,
         "recall": recall,
         "f1_score": f1,
@@ -302,11 +308,14 @@ async def train_classification_logistic(
         ]
     )
     pipeline.fit(X_train, y_train)
+    y_train_pred = pipeline.predict(X_train)
     y_pred = pipeline.predict(X_test)
 
     return _build_classification_metrics_response(
         message="Logistic regression training completed successfully.",
         model_name="LogisticRegression",
+        y_train=y_train,
+        y_train_pred=y_train_pred,
         y_test=y_test,
         y_pred=y_pred,
     )
@@ -349,11 +358,14 @@ async def train_classification_decision_tree(
 
     model = DecisionTreeClassifier(random_state=42, max_depth=max_depth)
     model.fit(X_train, y_train)
+    y_train_pred = model.predict(X_train)
     y_pred = model.predict(X_test)
 
     response = _build_classification_metrics_response(
         message="Decision tree training completed successfully.",
         model_name="Decision Tree Classifier",
+        y_train=y_train,
+        y_train_pred=y_train_pred,
         y_test=y_test,
         y_pred=y_pred,
     )
@@ -394,11 +406,14 @@ async def train_classification_random_forest(
 
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
+    y_train_pred = model.predict(X_train)
     y_pred = model.predict(X_test)
 
     return _build_classification_metrics_response(
         message="Random forest training completed successfully.",
         model_name="Random Forest Classifier",
+        y_train=y_train,
+        y_train_pred=y_train_pred,
         y_test=y_test,
         y_pred=y_pred,
     )
@@ -467,15 +482,21 @@ async def train_classification_neural_network(
 
     model.fit(X_train_np, y_train_np, epochs=10, batch_size=32, verbose=0)
 
+    y_train_prob = model.predict(X_train_np, verbose=0).ravel()
+    y_train_pred = (y_train_prob >= 0.5).astype(int)
     y_prob = model.predict(X_test_np, verbose=0).ravel()
     y_pred = (y_prob >= 0.5).astype(int)
 
-    accuracy = float(accuracy_score(y_test, y_pred))
+    train_accuracy = float(accuracy_score(y_train, y_train_pred))
+    test_accuracy = float(accuracy_score(y_test, y_pred))
+    accuracy_gap = train_accuracy - test_accuracy
 
     return {
         "message": "Neural network training completed successfully.",
         "model": "TensorFlow Sequential Neural Network",
-        "accuracy": accuracy,
+        "train_accuracy": train_accuracy,
+        "test_accuracy": test_accuracy,
+        "accuracy_gap": accuracy_gap,
         "actual_values": y_test[:10].tolist(),
         "predicted_values": y_pred[:10].tolist(),
         "predicted_probabilities": y_prob[:10].tolist(),
