@@ -81,31 +81,42 @@ This project is designed for:
 
 ```text
 End to End Machine Learning Playground/
-├─ README.md
-├─ requirements.txt
-├─ app/
-│  ├─ __init__.py
-│  ├─ main.py
-│  ├─ routes/
-│  │  ├─ __init__.py
-│  │  └─ classification.py
-│  ├─ services/
-│  │  ├─ __init__.py
-│  │  ├─ model_service.py
-│  │  └─ evaluation_service.py
-│  ├─ utils/
-│  │  └─ __init__.py
-│  └─ models/
-│     └─ __init__.py
-├─ data/
-│  ├─ raw/
-│  └─ processed/
-├─ models/
-│  └─ README.md
-├─ notebooks/
-│  └─ README.md
-└─ tests/
-	└─ README.md
+├─ README.md                      # Project documentation, setup, and API usage guide
+├─ requirements.txt               # Python dependency list used to run the project
+├─ app/                           # Application source code
+│  ├─ README.md                   # Overview of app modules and responsibilities
+│  ├─ __init__.py                 # Marks app as a Python package
+│  ├─ main.py                     # FastAPI app entry point and non-classification routes
+│  ├─ routes/                     # API route definitions
+│  │  ├─ README.md                # Notes about route modules and usage
+│  │  ├─ __init__.py              # Marks routes as a Python package
+│  │  └─ classification.py        # Classification-related endpoints (logistic, tree, forest, NN)
+│  ├─ services/                   # Reusable business/ML logic
+│  │  ├─ README.md                # Service-layer design and extension notes
+│  │  ├─ __init__.py              # Marks services as a Python package
+│  │  ├─ model_service.py         # Model training helpers for sklearn classifiers
+│  │  └─ evaluation_service.py    # Accuracy/precision/recall/F1/confusion-matrix utilities
+│  ├─ utils/                      # Shared utility helpers (expand as project grows)
+│  │  ├─ README.md                # Utility helper guidance and conventions
+│  │  └─ __init__.py              # Marks utils as a Python package
+│  └─ models/                     # App-level model schemas/types placeholder
+│     ├─ README.md                # Notes for app schemas and typed payloads
+│     └─ __init__.py              # Marks models as a Python package
+├─ data/                          # Local datasets for experiments
+│  ├─ README.md                   # Data folder purpose and organization
+│  ├─ raw/                        # Original, unprocessed datasets
+│  │  ├─ README.md                # Synthetic dataset usage instructions
+│  │  ├─ sample_regression.csv    # Sample regression dataset for /upload
+│  │  ├─ sample_classification.csv# Sample binary classification dataset
+│  │  └─ sample_unsupervised.csv  # Sample unsupervised dataset for PCA/KMeans
+│  └─ processed/                  # Cleaned/transformed datasets
+│     └─ README.md                # Processed-data storage guidance
+├─ models/                        # Saved artifacts and model documentation
+│  └─ README.md                   # Notes about trained model files and usage
+├─ notebooks/                     # Experiment notebooks for exploration
+│  └─ README.md                   # Notebook conventions and best practices
+└─ tests/                         # Automated test suite (unit/integration)
+   └─ README.md                   # Testing scope and structure guidance
 ```
 
 ## Installation Guide
@@ -179,6 +190,19 @@ Default local URL:
 
 - `POST /train-clustering-kmeans` - K-Means clustering
 - `POST /train-pca` - PCA dimensionality reduction
+
+## Sample Test Datasets
+
+Use the ready synthetic datasets in `data/raw/` to test endpoints quickly:
+
+- `data/raw/sample_regression.csv`
+	- Use with `POST /upload` (contains `price` target column).
+- `data/raw/sample_classification.csv`
+	- Use with classification endpoints and set `target_column=target`.
+- `data/raw/sample_unsupervised.csv`
+	- Use with `POST /train-clustering-kmeans` and `POST /train-pca`.
+
+These files are committed in the repository, so anyone can download and upload them directly via Swagger UI (`/docs`) or cURL.
 
 ## Example API Usage
 
