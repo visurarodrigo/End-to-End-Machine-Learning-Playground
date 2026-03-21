@@ -4,6 +4,7 @@ import pandas as pd
 import tensorflow as tf
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.cluster import KMeans
 from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, mean_squared_error, precision_score, recall_score
 from sklearn.model_selection import train_test_split
@@ -480,6 +481,61 @@ async def train_classification_neural_network(
         "class_mapping": {str(index): str(label) for index, label in enumerate(class_labels.tolist())},
         "epochs": 10,
         "batch_size": 32,
+    }
+
+
+@app.post("/train-clustering-kmeans", summary="Train a KMeans clustering model")
+async def train_clustering_kmeans(
+    file: UploadFile = File(...),
+    k: int = Form(...),
+) -> dict[str, object]:
+    """Train a KMeans clustering model from an uploaded CSV file."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are allowed.")
+
+    if k <= 0:
+        raise HTTPException(status_code=400, detail="k must be a positive integer.")
+
+    try:
+        file_bytes = await file.read()
+        df = pd.read_csv(BytesIO(file_bytes))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV file: {exc}") from exc
+
+    X = df.select_dtypes(include="number")
+    if X.empty:
+        raise HTTPException(status_code=400, detail="No numeric columns found in CSV after dropping non-numeric columns.")
+
+    if X.isnull().any().any():
+        raise HTTPException(status_code=400, detail="Numeric feature columns contain missing values. Please clean missing values first.")
+
+    if k > len(X):
+        raise HTTPException(
+            status_code=400,
+            detail=f"k cannot be greater than number of samples ({len(X)}).",
+        )
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    model = KMeans(n_clusters=k, random_state=42, n_init=10)
+    model.fit(X_scaled)
+
+    cluster_labels = model.labels_.tolist()
+    first_10_assignments = [
+        {"row_index": int(index), "cluster": int(label)}
+        for index, label in zip(X.index[:10], cluster_labels[:10])
+    ]
+
+    return {
+        "message": "KMeans clustering training completed successfully.",
+        "model": "KMeans",
+        "k": k,
+        "samples_used": int(len(X)),
+        "numeric_columns_used": [str(column) for column in X.columns.tolist()],
+        "cluster_labels": [int(label) for label in cluster_labels],
+        "cluster_centers": model.cluster_centers_.tolist(),
+        "first_10_cluster_assignments": first_10_assignments,
     }
 
 
