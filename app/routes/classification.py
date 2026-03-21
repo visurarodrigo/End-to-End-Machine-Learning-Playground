@@ -41,7 +41,7 @@ async def train_classification_logistic(
             detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}",
         )
 
-    X = df.drop(columns=[target_column])
+    X = df.drop(columns=[target_column]).astype(float)
     y = df[target_column]
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -79,7 +79,7 @@ async def train_classification_decision_tree(
             detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}",
         )
 
-    X = df.drop(columns=[target_column])
+    X = df.drop(columns=[target_column]).astype(float)
     y = df[target_column]
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -121,7 +121,7 @@ async def train_classification_random_forest(
             detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}",
         )
 
-    X = df.drop(columns=[target_column])
+    X = df.drop(columns=[target_column]).astype(float)
     y = df[target_column]
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -166,7 +166,7 @@ async def train_classification_neural_network(
             detail=f"Target column '{target_column}' not found in dataset. Available columns: {', '.join(df.columns)}",
         )
 
-    X = df.drop(columns=[target_column])
+    X = df.drop(columns=[target_column]).astype(float)
     y = df[target_column]
 
     if y.isnull().any():
@@ -175,7 +175,6 @@ async def train_classification_neural_network(
     if y.nunique(dropna=True) != 2:
         raise HTTPException(status_code=400, detail="Neural network endpoint supports binary classification only.")
 
-    X = pd.get_dummies(X, drop_first=False)
     if X.empty:
         raise HTTPException(status_code=400, detail="No usable feature columns found after preprocessing.")
 

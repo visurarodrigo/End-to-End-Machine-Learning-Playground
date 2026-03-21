@@ -168,6 +168,54 @@ Default local URL:
 - Swagger Docs: http://127.0.0.1:8000/docs
 - ReDoc: http://127.0.0.1:8000/redoc
 
+## Interactive API Testing with Swagger UI
+
+FastAPI automatically generates an interactive API documentation interface called **Swagger UI**. You can test all endpoints directly from your browser without writing any code.
+
+### How to Access Swagger UI
+
+Once the server is running, open your browser and navigate to:
+
+```
+http://127.0.0.1:8000/docs
+```
+
+### Swagger UI Interface Preview
+
+![FastAPI Swagger UI](./app/FastAPI%20-%20Swagger%20UI.png)
+
+### Understanding Each Part
+
+1. **Endpoint List (Left Side)** - All available API routes organized by category
+   - Green `GET` - Retrieve data (read-only)
+   - Dark Blue `POST` - Submit data (create/process)
+
+2. **Endpoint Details (Center)** - Click any endpoint to expand and see:
+   - **Summary** - Brief description of what the endpoint does
+   - **Parameters** - Input fields (file, target_column, etc.)
+   - **Request Body** - Data format required
+   - **Try it Out** - Button to test the endpoint interactively
+
+3. **Testing an Endpoint**
+   - Click **"Try it out"** button
+   - Fill in required parameters (file upload, column names, etc.)
+   - Click **"Execute"** to send the request
+   - View the response code, headers, and JSON output below
+
+4. **Response Section (Bottom)** - Shows:
+   - **Code** - HTTP status (200 = success, 400 = bad request, 500 = server error)
+   - **Response Body** - JSON output with results, metrics, or error details
+   - **Response Headers** - Content-Type, timestamp, etc.
+
+### Example Workflow in Swagger UI
+
+1. Select `/train-classification-logistic` endpoint
+2. Click **"Try it out"**
+3. Choose `sample_classification.csv` from `data/raw/`
+4. Enter `target` in the `target_column` field
+5. Click **"Execute"**
+6. View training results including accuracy, precision, recall, and confusion matrix
+
 ## API Endpoints
 
 ### Core
