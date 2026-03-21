@@ -286,8 +286,4 @@ By building and using this project, you will learn how to:
 
 ## Author
 
-Your Name  
-Machine Learning Engineer
-
-LinkedIn: https://www.linkedin.com/in/your-profile  
-GitHub: https://github.com/your-username
+Visura Rodrigo
