@@ -5,6 +5,7 @@ import tensorflow as tf
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.linear_model import Lasso, LinearRegression, LogisticRegression, Ridge
 from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, mean_squared_error, precision_score, recall_score
 from sklearn.model_selection import train_test_split
@@ -536,6 +537,60 @@ async def train_clustering_kmeans(
         "cluster_labels": [int(label) for label in cluster_labels],
         "cluster_centers": model.cluster_centers_.tolist(),
         "first_10_cluster_assignments": first_10_assignments,
+    }
+
+
+@app.post("/train-pca", summary="Apply PCA dimensionality reduction")
+async def train_pca(
+    file: UploadFile = File(...),
+    n_components: int = Form(...),
+) -> dict[str, object]:
+    """Apply PCA on numeric columns from an uploaded CSV file."""
+    if not file.filename or not file.filename.lower().endswith(".csv"):
+        raise HTTPException(status_code=400, detail="Only .csv files are allowed.")
+
+    if n_components <= 0:
+        raise HTTPException(status_code=400, detail="n_components must be a positive integer.")
+
+    try:
+        file_bytes = await file.read()
+        df = pd.read_csv(BytesIO(file_bytes))
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Failed to read CSV file: {exc}") from exc
+
+    X = df.select_dtypes(include="number")
+    if X.empty:
+        raise HTTPException(status_code=400, detail="No numeric columns found in CSV for PCA.")
+
+    if X.isnull().any().any():
+        raise HTTPException(status_code=400, detail="Numeric columns contain missing values. Please clean missing values first.")
+
+    max_components = min(X.shape[0], X.shape[1])
+    if n_components > max_components:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "n_components is too large. "
+                f"It must be <= min(n_samples, n_features) which is {max_components}."
+            ),
+        )
+
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X)
+
+    pca = PCA(n_components=n_components)
+    X_pca = pca.fit_transform(X_scaled)
+
+    transformed_first_10 = X_pca[:10].tolist()
+
+    return {
+        "message": "PCA completed successfully.",
+        "model": "PCA",
+        "n_components": n_components,
+        "samples_used": int(X.shape[0]),
+        "numeric_columns_used": [str(column) for column in X.columns.tolist()],
+        "first_10_transformed_rows": transformed_first_10,
+        "explained_variance_ratio": pca.explained_variance_ratio_.tolist(),
     }
 
 
