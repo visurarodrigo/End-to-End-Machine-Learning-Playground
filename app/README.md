@@ -1,11 +1,25 @@
-# App Folder
+# App - FastAPI Application
 
-This folder contains the FastAPI application code.
+This folder contains the core FastAPI application organized using clean architecture.
 
-## What is here
+## Structure
 
-- `main.py`: FastAPI entry point and non-classification endpoints.
-- `routes/`: API route modules.
-- `services/`: Reusable ML/business logic.
-- `utils/`: Shared utility helpers.
-- `models/`: App-level schemas and model-related placeholders.
+### `main.py`
+FastAPI entry point with core endpoints:
+- GET / - Welcome message
+- GET /health - Health check
+- POST /upload - CSV upload with regression
+- POST /train-clustering-kmeans - K-Means clustering
+- POST /train-pca - PCA dimensionality reduction
+
+### `routes/`
+API route handlers organized by feature (classification endpoints).
+
+### `services/`
+Reusable ML logic: model training and evaluation (independent of HTTP).
+
+### `utils/`
+Shared utility helpers and validation functions.
+
+### `models/`
+Pydantic schemas for request/response validation and auto-documentation.

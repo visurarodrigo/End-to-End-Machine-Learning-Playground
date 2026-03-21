@@ -99,9 +99,10 @@ End to End Machine Learning Playground/
 │  ├─ utils/                      # Shared utility helpers (expand as project grows)
 │  │  ├─ README.md                # Utility helper guidance and conventions
 │  │  └─ __init__.py              # Marks utils as a Python package
-│  └─ models/                     # App-level model schemas/types placeholder
+│  └─ models/                     # App-level model schemas/types (Pydantic)
+│     ├─ __init__.py              # Marks models as a Python package
 │     ├─ README.md                # Notes for app schemas and typed payloads
-│     └─ __init__.py              # Marks models as a Python package
+│     └─ schemas.py               # Pydantic request/response schemas with validation
 ├─ data/                          # Local datasets for experiments
 │  ├─ README.md                   # Data folder purpose and organization
 │  ├─ raw/                        # Original, unprocessed datasets
@@ -111,12 +112,15 @@ End to End Machine Learning Playground/
 │  │  └─ sample_unsupervised.csv  # Sample unsupervised dataset for PCA/KMeans
 │  └─ processed/                  # Cleaned/transformed datasets
 │     └─ README.md                # Processed-data storage guidance
-├─ models/                        # Saved artifacts and model documentation
-│  └─ README.md                   # Notes about trained model files and usage
+├─ models/                        # Saved model artifacts and persistence
+│  ├─ README.md                   # Notes about trained model files and usage
+│  └─ model_persistence.py        # ModelRegistry class for save/load operations
 ├─ notebooks/                     # Experiment notebooks for exploration
-│  └─ README.md                   # Notebook conventions and best practices
+│  ├─ README.md                   # Notebook conventions and best practices
+│  └─ exploration.ipynb           # End-to-end data exploration and model comparison notebook
 └─ tests/                         # Automated test suite (unit/integration)
-   └─ README.md                   # Testing scope and structure guidance
+   ├─ README.md                   # Testing scope and structure guidance
+   └─ test_services.py            # Unit tests for model and evaluation services
 ```
 
 ## Installation Guide
@@ -344,6 +348,91 @@ By building and using this project, you will learn how to:
 - Work with both supervised and unsupervised techniques
 - Organize ML code using route/service architecture
 - Prepare a portfolio-quality end-to-end ML backend
+
+## Extended Features
+
+### 1. Jupyter Notebook Exploration (`notebooks/exploration.ipynb`)
+
+A comprehensive Jupyter notebook that demonstrates:
+
+- **Data Loading & EDA** - Load datasets and explore distributions
+- **Statistical Analysis** - Summary statistics, missing values, target balance
+- **Feature Analysis** - Correlation matrices, feature distributions by class
+- **Model Training** - Train Logistic Regression and Random Forest side-by-side
+- **Model Evaluation** - Confusion matrices, classification reports, feature importance
+- **Visualization** - Histograms, heatmaps, bar charts, comparison plots
+- **Overfitting Detection** - Train/test accuracy gap analysis
+
+**Run the notebook:**
+```bash
+jupyter notebook notebooks/exploration.ipynb
+```
+
+### 2. Unit Tests (`tests/test_services.py`)
+
+Automated tests covering:
+
+- **Model Training Tests** - Verify logistic, decision tree, and random forest training
+- **Evaluation Metrics Tests** - Validate accuracy, precision, recall, F1 calculations
+- **Data Integrity Tests** - Ensure predictions match expected shapes and ranges
+
+**Run tests:**
+```bash
+python -m pytest tests/test_services.py -v
+```
+
+Or with unittest:
+```bash
+python -m unittest tests.test_services -v
+```
+
+### 3. Model Persistence (`models/model_persistence.py`)
+
+`ModelRegistry` class for saving and loading trained models:
+
+```python
+from models.model_persistence import ModelRegistry
+
+# Initialize registry
+registry = ModelRegistry(model_dir="models")
+
+# Save a trained model with metadata
+registry.save_model(
+    trained_model,
+    "logistic_v1",
+    {"accuracy": 0.92, "date": "2024-01-15"}
+)
+
+# Load a model
+loaded_model = registry.load_model("logistic_v1")
+
+# List all saved models
+all_models = registry.list_models()
+
+# Retrieve model metadata
+info = registry.get_model_info("logistic_v1")
+
+# Delete a model
+registry.delete_model("logistic_v1")
+```
+
+### 4. Pydantic Schemas (`app/models/schemas.py`)
+
+Type-safe request/response validation with Pydantic models:
+
+```python
+from app.models.schemas import ClassificationResponse, ClusteringResponse, PCAResponse
+
+# Automatically validates and documents API responses
+# Provides IDE autocomplete and runtime type checking
+```
+
+Schemas included:
+- `ClassificationResponse` - Logistic, Decision Tree, Random Forest, Neural Network
+- `ClusteringResponse` - K-Means clustering results
+- `PCAResponse` - Dimensionality reduction results
+- `HealthResponse` - Health check endpoint
+- `WelcomeResponse` - Welcome message
 
 ## Future Improvements
 

@@ -1,10 +1,21 @@
-# Utils Folder
+# Utils - Shared Utilities & Helpers
 
-This folder is reserved for shared helper functions.
+General-purpose helper functions used across the application. Utilities are small, focused, and independent of specific features.
 
-Examples:
-- Common validation helpers
-- CSV parsing helpers
-- Reusable formatting/transformation helpers
+## Design Philosophy
 
-Keep utilities generic and independent from endpoint-specific logic.
+Utilities should be:
+- **Generic:** Work across multiple contexts
+- **Focused:** Do one thing well
+- **Stateless:** Pure functions with no side effects
+- **Lightweight:** Minimal dependencies
+- **Reusable:** No endpoint-specific logic
+
+## Common Utility Patterns
+
+- Data validation (CSV format, file types, numeric columns)
+- Data transformation (standardization, normalization, scaling)
+- Formatting utilities (round metrics, format outputs)
+- Parsing helpers (extract metadata, convert types)
+
+Add utilities here as needed across the app to avoid code duplication.

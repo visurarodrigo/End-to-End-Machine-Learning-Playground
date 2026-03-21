@@ -1,12 +1,28 @@
-# Services Folder
+# Services - Business & ML Logic
 
-This folder contains reusable service-layer logic used by route handlers.
+Reusable, stateless service functions for ML operations. Services are independent of HTTP and can be used in routes, tests, and notebooks.
 
-## Current modules
+## Modules
 
-- `model_service.py`: Training/prediction helpers for sklearn classification models.
-- `evaluation_service.py`: Metric helpers (accuracy, precision, recall, F1, confusion matrix).
+### `model_service.py`
 
-## Notes
+Model training helpers:
+- `train_logistic_classifier(X_train, y_train, X_test)` 
+  - Logistic Regression with StandardScaler pipeline
+- `train_decision_tree_classifier(X_train, y_train, X_test, max_depth)`
+  - Decision Tree with optional depth control
+- `train_random_forest_classifier(X_train, y_train, X_test)`
+  - Random Forest (100 estimators)
 
-Add new model pipelines and reusable ML operations here.
+Returns: `(y_train_pred, y_test_pred)` - Predictions on both sets for overfitting detection
+
+### `evaluation_service.py`
+
+Evaluation metrics:
+- `calculate_train_test_accuracy()` - Accuracy and overfitting gap
+- `calculate_classification_metrics()` - Precision, recall, F1, confusion matrix
+- `build_classification_metrics_response()` - Combined metrics response
+
+## Key Principle
+
+Services are pure functions: same inputs → same outputs, no side effects. Can be imported directly by tests and notebooks.
