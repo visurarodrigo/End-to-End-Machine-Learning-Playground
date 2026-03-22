@@ -91,6 +91,74 @@ streamlit_app/
 
 ---
 
+## Screenshots & UI Guide
+
+### 🏠 Home Page
+![Home Page](Screen%20Shots/home%20page.png)
+
+**Overview:** Welcome page with quick start instructions, feature cards, and API status indicator.  
+Shows the main entry point with navigation to all ML workflows. Displays API health check and setup instructions.
+
+---
+
+### 📁 Upload CSV Page  
+![Upload Page](Screen%20Shots/upload%20csv%20page.png)
+
+**Features:**
+- Drag-and-drop CSV file upload area
+- Quick-start sample dataset buttons (House Prices, Loan Approval, Clustering)
+- Instant data preview with row/column count and missing values summary
+- One-click loading of pre-built datasets for immediate testing
+
+**Use This For:** Loading your own data or trying demo datasets before custom analysis.
+
+---
+
+### 📉 Regression Page
+![Regression Page](Screen%20Shots/Regression%20page.png)
+
+**Features:**
+- Train 5 regression models simultaneously (Linear, Scaled, Polynomial, Ridge, Lasso)
+- Bar chart comparing MSE across all models
+- Best-model highlight with performance analysis
+- Actual vs Predicted visualization
+- Detailed performance insights and recommendations
+
+**Use This For:** Predicting continuous values (prices, temperature, sales, etc.) and comparing regression strategies.
+
+---
+
+### 🎯 Classification Page
+![Classification Page](Screen%20Shots/Classification%20page.png)
+
+**Features:**
+- Select classification models: Logistic, Decision Tree, Random Forest, Neural Network
+- Configurable Decision Tree max_depth parameter
+- Multi-model comparison with grouped accuracy bars
+- Train/Test accuracy split visualization
+- Precision, Recall, F1 Score metrics per model
+- Confusion matrix heatmaps for error analysis
+- Overfitting detection (accuracy gap display)
+- Class distribution and baseline accuracy shown
+
+**Use This For:** Binary classification tasks (approval/denial, yes/no, etc.) with side-by-side model comparison.
+
+---
+
+### 🔍 Unsupervised Learning Page
+![Unsupervised Page](Screen%20Shots/Unsupervised%20page.png)
+
+**Features:**
+- **KMeans Clustering:** Adjustable k parameter, cluster distribution bar chart
+- **PCA Reduction:** Configurable components, explained variance visualization
+- Cumulative variance curve showing information retention
+- First N cluster assignments table for inspection
+- Component-wise variance breakdown
+
+**Use This For:** Finding patterns in unlabeled data, reducing dimensionality, and exploratory data analysis.
+
+---
+
 ## API Integration
 
 All pages communicate with the FastAPI backend via `api_client.py`:
