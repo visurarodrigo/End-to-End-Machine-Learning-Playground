@@ -529,6 +529,38 @@ Tests all endpoints with real data and displays:
 - Response structure validation
 - Execution time
 
+## Streamlit Interactive Frontend
+
+**🚀 Full-Featured User Interface** 
+
+A complete interactive Streamlit application for easy access to all ML workflows without writing code.
+
+### Home Page Preview
+
+![Home Page](./streamlit_app/Screen%20Shots/home%20page.png)
+
+### Frontend Features
+
+- **Multi-page navigation** with Home, Upload, Regression, Classification, and Unsupervised pages
+- **CSV Upload & Sample Datasets** - Load your own data or try pre-built examples instantly
+- **Regression Dashboard** - Train 5 models (Linear, Scaled, Polynomial, Ridge, Lasso) with real-time MSE comparison
+- **Classification Studio** - Compare 4 classifiers (Logistic, Decision Tree, Random Forest, Neural Network) with accuracy metrics and confusion matrices
+- **Unsupervised Explorer** - K-Means clustering and PCA dimensionality reduction with visualization
+- **Real-time Visualizations** - Interactive charts, scatter plots, and heatmaps powered by Plotly
+- **API Integration** - Seamlessly communicates with FastAPI backend
+
+### Running the Frontend
+
+```bash
+cd streamlit_app
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+Frontend runs on: `http://127.0.0.1:8501`
+
+For detailed screenshots and feature explanations, see [streamlit_app/README.md](./streamlit_app/README.md).
+
 ## Future Improvements
 
 - Add model persistence and loading (joblib/pickle)
@@ -559,4 +591,17 @@ For detailed completion information, see [PROJECT_FINALIZATION.md](PROJECT_FINAL
 
 ## Author
 
-Visura Rodrigo
+**Visura Rodrigo**  
+LinkedIn: [linkedin.com/in/visura-rodrigo-6aa98527a](https://www.linkedin.com/in/visura-rodrigo-6aa98527a)
+
+---
+
+**Project Status:** ✅ **FULLY COMPLETED & PRODUCTION READY**
+
+Complete end-to-end ML platform with:
+- FastAPI backend with 9 endpoints
+- Streamlit interactive frontend with 5 pages
+- 16 automated tests (100% pass rate)
+- Professional documentation
+- 500-row sample datasets for testing
+- Production-quality code architecture
