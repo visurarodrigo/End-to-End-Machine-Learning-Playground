@@ -25,9 +25,13 @@ def calculate_classification_metrics(
     y_pred: object,
 ) -> dict[str, object]:
     """Calculate precision, recall, F1, and confusion matrix details."""
-    precision = float(precision_score(y_true, y_pred, zero_division=0))
-    recall = float(recall_score(y_true, y_pred, zero_division=0))
-    f1 = float(f1_score(y_true, y_pred, zero_division=0))
+    # Determine if binary or multiclass
+    num_classes = len(set(y_true))
+    average_method = "binary" if num_classes == 2 else "weighted"
+    
+    precision = float(precision_score(y_true, y_pred, zero_division=0, average=average_method))
+    recall = float(recall_score(y_true, y_pred, zero_division=0, average=average_method))
+    f1 = float(f1_score(y_true, y_pred, zero_division=0, average=average_method))
 
     cm = confusion_matrix(y_true, y_pred)
     if cm.shape == (2, 2):
