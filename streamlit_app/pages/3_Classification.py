@@ -3,7 +3,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 from io import BytesIO
 import sys
 from pathlib import Path
@@ -59,8 +58,39 @@ csv_bytes.seek(0)
 
 st.info(f"📄 Dataset: {filename} | Target: {target_column} | Selected Models: {len(selected_models)}")
 
+# Show class balance and a majority-class baseline for context.
+target_series = df[target_column]
+target_counts = target_series.value_counts(dropna=False)
+majority_baseline = float(target_counts.max() / len(target_series)) if len(target_series) > 0 else 0.0
+st.caption(
+    f"Target classes: {target_series.nunique(dropna=False)} | "
+    f"Majority-class baseline accuracy: {majority_baseline:.3f}"
+)
+
+if target_series.nunique(dropna=False) > 20:
+    st.warning(
+        "This target has many unique values and may not be suitable for classification. "
+        "Choose a categorical/binary target column."
+    )
+
+config_signature = (
+    filename,
+    target_column,
+    tuple(sorted(selected_models)),
+    max_depth,
+)
+
+previous_signature = st.session_state.get("classification_config_signature")
+if previous_signature is not None and previous_signature != config_signature:
+    st.session_state.pop("classification_results", None)
+    st.info("Configuration changed. Previous results were cleared. Click Train to run with new settings.")
+
 # Train models
 if st.button("🚀 Train Selected Models", use_container_width=True):
+    if not selected_models:
+        st.warning("Please select at least one model to train.")
+        st.stop()
+
     results = {}
     
     progress_bar = st.progress(0)
@@ -101,6 +131,7 @@ if st.button("🚀 Train Selected Models", use_container_width=True):
     
     # Store results
     st.session_state.classification_results = results
+    st.session_state.classification_config_signature = config_signature
     st.success("✅ Training complete!")
 
 # Display results if available
@@ -129,9 +160,27 @@ if "classification_results" in st.session_state:
             comp_df = pd.DataFrame(comparison_data)
             
             # Bar chart - Accuracy comparison
-            fig = px.bar(comp_df, x="Model", y=["Train Accuracy", "Test Accuracy"],
-                        barmode="group", title="Model Accuracy Comparison",
-                        color_discrete_map={"Train Accuracy": "#1f77b4", "Test Accuracy": "#ff7f0e"})
+            fig = go.Figure()
+            fig.add_trace(
+                go.Bar(
+                    x=comp_df["Model"],
+                    y=comp_df["Train Accuracy"],
+                    name="Train Accuracy",
+                    marker_color="#1f77b4",
+                )
+            )
+            fig.add_trace(
+                go.Bar(
+                    x=comp_df["Model"],
+                    y=comp_df["Test Accuracy"],
+                    name="Test Accuracy",
+                    marker_color="#ff7f0e",
+                )
+            )
+            fig.update_layout(
+                barmode="group",
+                title="Model Accuracy Comparison",
+            )
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True, key="class_accuracy")
             
@@ -187,16 +236,23 @@ if "classification_results" in st.session_state:
                 cm = result["confusion_matrix"]
                 
                 with st.expander(f"🔲 {model_name}", expanded=False):
-                    # Create confusion matrix heatmap
-                    fig = go.Figure(data=go.Heatmap(
-                        z=[[cm.get("TP", 0), cm.get("FP", 0)],
-                           [cm.get("FN", 0), cm.get("TN", 0)]],
-                        x=["Predicted Positive", "Predicted Negative"],
-                        y=["Actual Positive", "Actual Negative"],
-                        text=[[f"TP: {cm.get('TP', 0)}", f"FP: {cm.get('FP', 0)}"],
-                              [f"FN: {cm.get('FN', 0)}", f"TN: {cm.get('TN', 0)}"]],
-                        texttemplate="%{text}",
-                        colorscale="Blues"
-                    ))
-                    fig.update_layout(height=400)
-                    st.plotly_chart(fig, use_container_width=True, key=f"cm_{model_name}")
+                    # Support both short keys and descriptive keys from backend payload.
+                    tp = cm.get("TP", cm.get("true_positives", 0))
+                    fp = cm.get("FP", cm.get("false_positives", 0))
+                    fn = cm.get("FN", cm.get("false_negatives", 0))
+                    tn = cm.get("TN", cm.get("true_negatives", 0))
+
+                    if "matrix" in cm:
+                        matrix = cm.get("matrix", [])
+                        st.dataframe(pd.DataFrame(matrix), use_container_width=True, key=f"cm_table_{model_name}")
+                    else:
+                        fig = go.Figure(data=go.Heatmap(
+                            z=[[tp, fp], [fn, tn]],
+                            x=["Predicted Positive", "Predicted Negative"],
+                            y=["Actual Positive", "Actual Negative"],
+                            text=[[f"TP: {tp}", f"FP: {fp}"], [f"FN: {fn}", f"TN: {tn}"]],
+                            texttemplate="%{text}",
+                            colorscale="Blues"
+                        ))
+                        fig.update_layout(height=400)
+                        st.plotly_chart(fig, use_container_width=True, key=f"cm_{model_name}")
