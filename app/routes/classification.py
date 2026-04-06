@@ -1,5 +1,3 @@
-from io import BytesIO
-
 import pandas as pd
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from sklearn.model_selection import train_test_split
@@ -10,20 +8,10 @@ from app.services.model_service import (
     train_logistic_classifier,
     train_random_forest_classifier,
 )
+from app.utils.csv_utils import read_csv_upload
 
 
 router = APIRouter(tags=["classification"])
-
-
-def _read_csv_upload(file: UploadFile, file_bytes: bytes) -> pd.DataFrame:
-    """Read a CSV upload into a DataFrame with consistent error handling."""
-    if not file.filename or not file.filename.lower().endswith(".csv"):
-        raise HTTPException(status_code=400, detail="Only .csv files are allowed.")
-
-    try:
-        return pd.read_csv(BytesIO(file_bytes))
-    except Exception as exc:
-        raise HTTPException(status_code=400, detail=f"Failed to read CSV file: {exc}") from exc
 
 
 @router.post("/train-classification-logistic", summary="Train a Logistic Regression classifier")
@@ -32,8 +20,7 @@ async def train_classification_logistic(
     target_column: str = Form(...),
 ) -> dict[str, object]:
     """Train a Logistic Regression model from an uploaded CSV file."""
-    file_bytes = await file.read()
-    df = _read_csv_upload(file, file_bytes)
+    df = await read_csv_upload(file)
 
     if target_column not in df.columns:
         raise HTTPException(
@@ -70,8 +57,7 @@ async def train_classification_decision_tree(
     max_depth: int | None = Form(None),
 ) -> dict[str, object]:
     """Train a Decision Tree Classifier model from an uploaded CSV file."""
-    file_bytes = await file.read()
-    df = _read_csv_upload(file, file_bytes)
+    df = await read_csv_upload(file)
 
     if target_column not in df.columns:
         raise HTTPException(
@@ -112,8 +98,7 @@ async def train_classification_random_forest(
     target_column: str = Form(...),
 ) -> dict[str, object]:
     """Train a Random Forest Classifier model from an uploaded CSV file."""
-    file_bytes = await file.read()
-    df = _read_csv_upload(file, file_bytes)
+    df = await read_csv_upload(file)
 
     if target_column not in df.columns:
         raise HTTPException(
@@ -157,8 +142,7 @@ async def train_classification_neural_network(
             detail="TensorFlow is not installed. Install tensorflow to use this endpoint.",
         ) from exc
 
-    file_bytes = await file.read()
-    df = _read_csv_upload(file, file_bytes)
+    df = await read_csv_upload(file)
 
     if target_column not in df.columns:
         raise HTTPException(
