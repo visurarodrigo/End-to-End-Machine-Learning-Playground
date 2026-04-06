@@ -4,7 +4,6 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-red.svg)](https://streamlit.io/)
 [![Tests Passing](https://img.shields.io/badge/Tests-16%2F16%20✓-brightgreen.svg)]()
-# End-to-End Machine Learning Playground
 
 This repository contains a FastAPI backend and a Streamlit frontend for running common machine learning workflows from CSV data. It supports regression analysis, classification, KMeans clustering, and PCA-based dimensionality reduction through both a web UI and a REST API.
 
