@@ -3,11 +3,7 @@
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.32+-red.svg)](https://streamlit.io/)
-<<<<<<< HEAD
 [![Tests Passing](https://img.shields.io/badge/Tests-16%2F16-brightgreen.svg)]()
-=======
-[![Tests Passing](https://img.shields.io/badge/Tests-16%2F16%20✓-brightgreen.svg)]()
->>>>>>> b87d585d10f07a87a600d3b29ade0d1a0dbd940e
 
 This repository contains a FastAPI backend and a Streamlit frontend for common machine learning workflows from CSV data. It supports regression analysis, classification, KMeans clustering, and PCA-based dimensionality reduction through both a web UI and REST API.
 
