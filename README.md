@@ -75,19 +75,19 @@ streamlit_app/
 ## Screenshots
 
 ### Home
-![Home Page](streamlit_app\Screen%20Shots/Home%20Page.png)
+![Home Page](streamlit_app/Screen%20Shots/Home%20Page.png)
 
 ### Upload
-![Upload Page](streamlit_app\Screen%20Shots/Upload%20CSV%20Page.png)
+![Upload Page](streamlit_app/Screen%20Shots/Upload%20CSV%20Page.png)
 
 ### Regression
-![Regression Page](streamlit_app\Screen%20Shots/Regression%20page.png)
+![Regression Page](streamlit_app/Screen%20Shots/Regression%20page.png)
 
 ### Classification
-![Classification Page](streamlit_app\Screen%20Shots/Classification%20page.png)
+![Classification Page](streamlit_app/Screen%20Shots/Classification%20page.png)
 
 ### Unsupervised
-![Unsupervised Page](streamlit_app\Screen%20Shots/Unsupervised%20page.png)
+![Unsupervised Page](streamlit_app/Screen%20Shots/Unsupervised%20page.png)
 
 ---
 
