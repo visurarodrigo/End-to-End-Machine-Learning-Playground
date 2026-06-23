@@ -7,6 +7,16 @@ Train, compare, and visualize ML models directly in your browser — no backend 
 
 ---
 
+## 💡 Overview
+Training and comparing multiple machine learning models usually requires writing repetitive boilerplate code. The **Streamlit ML Playground** is a zero-code, interactive web application that allows users to instantly benchmark regression, classification, and clustering algorithms on any tabular dataset. It is designed for rapid prototyping, educational purposes, and quick data exploration.
+
+---
+
+## 🛠️ Tech Stack
+- **Frontend:** Streamlit (Multi-page app architecture)
+- **Backend/ML:** Python, Scikit-learn, Pandas, NumPy
+- **Visualization:** Plotly / Matplotlib / Seaborn
+
 ## Run Locally
 
 ```bash
@@ -101,4 +111,5 @@ streamlit_app/
 
 ---
 
-Author - Visura Rodrigo
+## 👤 Connect with Me
+Built by **Visura Rodrigo**  
