@@ -85,10 +85,10 @@ streamlit_app/
 ## Screenshots
 
 ### Home
-![Home Page](streamlit_app/Screen%20Shots/Home%20Page.png)
+![Home Page](streamlit_app/Screen%20Shots/home%20page.png)
 
 ### Upload
-![Upload Page](streamlit_app/Screen%20Shots/Upload%20CSV%20Page.png)
+![Upload Page](streamlit_app/Screen%20Shots/upload%20csv%20page.png)
 
 ### Regression
 ![Regression Page](streamlit_app/Screen%20Shots/Regression%20page.png)
@@ -111,5 +111,9 @@ streamlit_app/
 
 ---
 
+<<<<<<< HEAD
 ## 👤 Connect with Me
 Built by **Visura Rodrigo**  
+=======
+Author - Visura Rodrigo
+>>>>>>> 6a21b1f8c8a9f508ff135bf5cdf65e97c8c54e4e
