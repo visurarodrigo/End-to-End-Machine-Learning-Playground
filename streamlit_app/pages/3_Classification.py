@@ -1,4 +1,4 @@
-"""Classification models - Logistic, Decision Tree, Random Forest, Neural Network."""
+"""Classification models - Logistic, Decision Tree, Random Forest."""
 
 import streamlit as st
 import pandas as pd
@@ -13,246 +13,262 @@ from utils import api_client
 
 st.set_page_config(page_title="Classification", layout="wide")
 
-st.title("🎯 Classification Models")
-st.write("Train and compare classification models on your dataset.")
+st.markdown("""
+    <style>
+    .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+    div[data-testid="metric-container"] {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
+# ── Header ────────────────────────────────────────────────────────────────────
+st.title("🎯 Classification")
+st.caption("Train and compare classification models on your dataset.")
+st.divider()
+
+# ── Dataset check ─────────────────────────────────────────────────────────────
 if "dataset" not in st.session_state:
-    st.warning("⚠️ Please upload a dataset first on the Upload page.")
+    st.info("No dataset loaded. Go to the **Upload** page first.")
     st.stop()
 
 df = st.session_state.dataset
 filename = st.session_state.filename
 
-# Sidebar controls
-st.sidebar.header("⚙️ Configuration")
+# ── Sidebar config ────────────────────────────────────────────────────────────
+st.sidebar.markdown("### Configuration")
 
-numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+all_cols = df.columns.tolist()
 target_column = st.sidebar.selectbox(
-    "Target Column (for prediction)",
-    numeric_cols,
-    help="Select the column you want to predict"
+    "Target Column",
+    all_cols,
+    help="The column you want to predict."
 )
-
-models = {
-    "Logistic Regression": "logistic",
-    "Decision Tree": "decision_tree",
-    "Random Forest": "random_forest",
-    "Neural Network": "neural_network"
-}
 
 selected_models = st.sidebar.multiselect(
-    "Select Models to Train",
-    list(models.keys()),
-    default=["Logistic Regression", "Decision Tree", "Random Forest"]
+    "Models to Train",
+    ["Logistic Regression", "Decision Tree", "Random Forest"],
+    default=["Logistic Regression", "Decision Tree", "Random Forest"],
 )
 
-# Optional: Decision tree depth
 max_depth = None
 if "Decision Tree" in selected_models:
-    max_depth = st.sidebar.slider("Decision Tree Max Depth", 1, 20, 5)
+    max_depth = st.sidebar.slider("Decision Tree — Max Depth", 1, 20, 5)
 
-# Convert dataframe to bytes
-csv_bytes = BytesIO()
-df.to_csv(csv_bytes, index=False)
-csv_bytes.seek(0)
-
-st.info(f"📄 Dataset: {filename} | Target: {target_column} | Selected Models: {len(selected_models)}")
-
-# Show class balance and a majority-class baseline for context.
+# ── Dataset summary ───────────────────────────────────────────────────────────
 target_series = df[target_column]
-target_counts = target_series.value_counts(dropna=False)
-majority_baseline = float(target_counts.max() / len(target_series)) if len(target_series) > 0 else 0.0
-st.caption(
-    f"Target classes: {target_series.nunique(dropna=False)} | "
-    f"Majority-class baseline accuracy: {majority_baseline:.3f}"
-)
+n_classes = target_series.nunique(dropna=False)
+majority_baseline = float(target_series.value_counts(dropna=False).max() / len(target_series))
 
-if target_series.nunique(dropna=False) > 20:
+c1, c2, c3, c4 = st.columns(4)
+c1.metric("Dataset", filename)
+c2.metric("Rows", f"{df.shape[0]:,}")
+c3.metric("Target Classes", n_classes)
+c4.metric("Baseline Accuracy", f"{majority_baseline:.3f}")
+
+if n_classes > 20:
     st.warning(
-        "This target has many unique values and may not be suitable for classification. "
-        "Choose a categorical/binary target column."
+        "This target column has many unique values and may not suit classification. "
+        "Consider choosing a binary or categorical column."
     )
 
-config_signature = (
-    filename,
-    target_column,
-    tuple(sorted(selected_models)),
-    max_depth,
-)
+st.divider()
 
-previous_signature = st.session_state.get("classification_config_signature")
-if previous_signature is not None and previous_signature != config_signature:
+# ── Config change detection ───────────────────────────────────────────────────
+config_signature = (filename, target_column, tuple(sorted(selected_models)), max_depth)
+if st.session_state.get("classification_config_signature") != config_signature:
     st.session_state.pop("classification_results", None)
-    st.info("Configuration changed. Previous results were cleared. Click Train to run with new settings.")
 
-# Train models
-if st.button("🚀 Train Selected Models", use_container_width=True):
+# ── Train button ──────────────────────────────────────────────────────────────
+if st.button("Train Models", use_container_width=True, type="primary"):
     if not selected_models:
-        st.warning("Please select at least one model to train.")
+        st.warning("Select at least one model from the sidebar.")
         st.stop()
 
     results = {}
-    
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-    
+    progress = st.progress(0)
+    status = st.empty()
     total = len(selected_models)
-    
+
     for idx, model_name in enumerate(selected_models):
-        status_text.text(f"Training {model_name}...")
-        
-        # Convert to bytes fresh for each request
-        csv_bytes_fresh = BytesIO()
-        df.to_csv(csv_bytes_fresh, index=False)
-        csv_bytes_fresh.seek(0)
-        
+        status.caption(f"Training {model_name}...")
+
+        csv_fresh = BytesIO()
+        df.to_csv(csv_fresh, index=False)
+        csv_fresh.seek(0)
+        b = csv_fresh.getvalue()
+
         if model_name == "Logistic Regression":
-            result = api_client.train_logistic_regression(
-                csv_bytes_fresh.getvalue(), filename, target_column
-            )
+            result = api_client.train_logistic_regression(b, filename, target_column)
         elif model_name == "Decision Tree":
-            result = api_client.train_decision_tree(
-                csv_bytes_fresh.getvalue(), filename, target_column, max_depth
-            )
+            result = api_client.train_decision_tree(b, filename, target_column, max_depth)
         elif model_name == "Random Forest":
-            result = api_client.train_random_forest(
-                csv_bytes_fresh.getvalue(), filename, target_column
-            )
-        elif model_name == "Neural Network":
-            result = api_client.train_neural_network(
-                csv_bytes_fresh.getvalue(), filename, target_column
-            )
-        
+            result = api_client.train_random_forest(b, filename, target_column)
+
         results[model_name] = result
-        progress_bar.progress((idx + 1) / total)
-    
-    progress_bar.empty()
-    status_text.empty()
-    
-    # Store results
+        progress.progress((idx + 1) / total)
+
+    progress.empty()
+    status.empty()
+
     st.session_state.classification_results = results
     st.session_state.classification_config_signature = config_signature
-    st.success("✅ Training complete!")
+    st.success("Training complete.")
 
-# Display results if available
-if "classification_results" in st.session_state:
-    results = st.session_state.classification_results
-    
-    tab1, tab2, tab3 = st.tabs(["📊 Comparison", "📈 Details", "❌ Confusion Matrices"])
-    
-    with tab1:
-        st.subheader("Model Performance Comparison")
-        
-        # Prepare comparison data
-        comparison_data = []
-        for model_name, result in results.items():
-            if "error" not in result:
-                comparison_data.append({
-                    "Model": model_name,
-                    "Train Accuracy": result.get("train_accuracy", 0),
-                    "Test Accuracy": result.get("test_accuracy", 0),
-                    "Precision": result.get("precision", 0),
-                    "Recall": result.get("recall", 0),
-                    "F1 Score": result.get("f1_score", 0)
+# ── Results ───────────────────────────────────────────────────────────────────
+if "classification_results" not in st.session_state:
+    st.stop()
+
+results = st.session_state.classification_results
+
+# ── Build comparison table ────────────────────────────────────────────────────
+comparison_data = []
+for model_name, result in results.items():
+    if "error" not in result:
+        comparison_data.append({
+            "Model": model_name,
+            "Train Accuracy": round(result.get("train_accuracy", 0), 4),
+            "Test Accuracy": round(result.get("test_accuracy", 0), 4),
+            "Accuracy Gap": round(result.get("accuracy_gap", 0), 4),
+            "Precision": round(result.get("precision", 0), 4),
+            "Recall": round(result.get("recall", 0), 4),
+            "F1 Score": round(result.get("f1_score", 0), 4),
+        })
+
+# ── Summary metrics ───────────────────────────────────────────────────────────
+if comparison_data:
+    comp_df = pd.DataFrame(comparison_data)
+    best_row = comp_df.loc[comp_df["Test Accuracy"].idxmax()]
+
+    s1, s2, s3 = st.columns(3)
+    s1.metric("Best Model", best_row["Model"])
+    s2.metric("Best Test Accuracy", f"{best_row['Test Accuracy']:.4f}")
+    s3.metric("Best F1 Score", f"{comp_df['F1 Score'].max():.4f}")
+    st.divider()
+
+# ── Tabs ──────────────────────────────────────────────────────────────────────
+tab1, tab2, tab3 = st.tabs(["Comparison", "Per-Model Details", "Confusion Matrices"])
+
+# ── Tab 1: Comparison ─────────────────────────────────────────────────────────
+with tab1:
+    if not comparison_data:
+        st.info("No results to display yet. Train models above.")
+    else:
+        st.subheader("Accuracy — Train vs Test")
+        st.caption("A large gap between train and test accuracy suggests overfitting.")
+
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=comp_df["Model"],
+            y=comp_df["Train Accuracy"],
+            name="Train Accuracy",
+            marker_color="#adb5bd",
+        ))
+        fig.add_trace(go.Bar(
+            x=comp_df["Model"],
+            y=comp_df["Test Accuracy"],
+            name="Test Accuracy",
+            marker_color="#1f77b4",
+        ))
+        fig.update_layout(
+            barmode="group",
+            height=360,
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            xaxis=dict(showgrid=False),
+            yaxis=dict(
+                showgrid=True, gridcolor="#e9ecef",
+                range=[0, 1], title="Accuracy"
+            ),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02),
+            margin=dict(t=10, b=10),
+        )
+        st.plotly_chart(fig, use_container_width=True, key="class_accuracy")
+
+        st.divider()
+        st.subheader("Full Metrics Table")
+        st.dataframe(comp_df, use_container_width=True, hide_index=True, key="class_comparison")
+
+# ── Tab 2: Per-model details ──────────────────────────────────────────────────
+with tab2:
+    for model_name, result in results.items():
+        if "error" in result:
+            st.error(f"{model_name}: {result['error']}")
+            continue
+
+        with st.expander(model_name, expanded=False):
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("Train Accuracy", f"{result.get('train_accuracy', 0):.4f}")
+            m2.metric("Test Accuracy", f"{result.get('test_accuracy', 0):.4f}")
+            gap = result.get("accuracy_gap", 0)
+            m3.metric("Accuracy Gap", f"{gap:.4f}",
+                      delta=f"{'overfitting risk' if gap > 0.1 else 'ok'}",
+                      delta_color="inverse" if gap > 0.1 else "off")
+            m4.metric("F1 Score", f"{result.get('f1_score', 0):.4f}")
+
+            st.markdown(" ")
+            p1, p2 = st.columns(2)
+            p1.metric("Precision", f"{result.get('precision', 0):.4f}")
+            p2.metric("Recall", f"{result.get('recall', 0):.4f}")
+
+            if result.get("actual_values") and result.get("predicted_values"):
+                st.markdown(" ")
+                st.caption("Sample predictions (first 10 from test set)")
+                pred_df = pd.DataFrame({
+                    "Actual": result["actual_values"],
+                    "Predicted": result["predicted_values"],
                 })
-        
-        if comparison_data:
-            comp_df = pd.DataFrame(comparison_data)
-            
-            # Bar chart - Accuracy comparison
-            fig = go.Figure()
-            fig.add_trace(
-                go.Bar(
-                    x=comp_df["Model"],
-                    y=comp_df["Train Accuracy"],
-                    name="Train Accuracy",
-                    marker_color="#1f77b4",
-                )
-            )
-            fig.add_trace(
-                go.Bar(
-                    x=comp_df["Model"],
-                    y=comp_df["Test Accuracy"],
-                    name="Test Accuracy",
-                    marker_color="#ff7f0e",
-                )
-            )
-            fig.update_layout(
-                barmode="group",
-                title="Model Accuracy Comparison",
-            )
-            fig.update_layout(height=400)
-            st.plotly_chart(fig, use_container_width=True, key="class_accuracy")
-            
-            st.dataframe(
-                comparison_data,
-                use_container_width=True,
-                key="class_comparison"
-            )
-    
-    with tab2:
-        st.subheader("Detailed Metrics Per Model")
-        
-        for model_name, result in results.items():
-            if "error" not in result:
-                with st.expander(f"📋 {model_name}", expanded=False):
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        st.metric("Train Accuracy", f"{result.get('train_accuracy', 0):.4f}")
-                    with col2:
-                        st.metric("Test Accuracy", f"{result.get('test_accuracy', 0):.4f}")
-                    with col3:
-                        gap = result.get("accuracy_gap", 0)
-                        st.metric("Accuracy Gap", f"{gap:.4f}", 
-                                 delta_color="inverse" if gap > 0.1 else "normal")
-                    with col4:
-                        st.metric("F1 Score", f"{result.get('f1_score', 0):.4f}")
-                    
-                    st.divider()
-                    
-                    col5, col6 = st.columns(2)
-                    with col5:
-                        st.metric("Precision", f"{result.get('precision', 0):.4f}")
-                    with col6:
-                        st.metric("Recall", f"{result.get('recall', 0):.4f}")
-                    
-                    # Sample predictions
-                    st.subheader("Sample Predictions")
-                    if result.get("actual_values") and result.get("predicted_values"):
-                        pred_sample = pd.DataFrame({
-                            "Actual": result["actual_values"],
-                            "Predicted": result["predicted_values"]
-                        })
-                        st.dataframe(pred_sample, use_container_width=True, key=f"pred_{model_name}")
-            else:
-                st.error(f"❌ {model_name}: {result['error']}")
-    
-    with tab3:
-        st.subheader("Confusion Matrices")
-        
-        for model_name, result in results.items():
-            if "error" not in result and "confusion_matrix" in result:
-                cm = result["confusion_matrix"]
-                
-                with st.expander(f"🔲 {model_name}", expanded=False):
-                    # Support both short keys and descriptive keys from backend payload.
-                    tp = cm.get("TP", cm.get("true_positives", 0))
-                    fp = cm.get("FP", cm.get("false_positives", 0))
-                    fn = cm.get("FN", cm.get("false_negatives", 0))
-                    tn = cm.get("TN", cm.get("true_negatives", 0))
+                pred_df["Correct"] = pred_df["Actual"] == pred_df["Predicted"]
+                st.dataframe(pred_df, use_container_width=True,
+                             hide_index=True, key=f"pred_{model_name}")
 
-                    if "matrix" in cm:
-                        matrix = cm.get("matrix", [])
-                        st.dataframe(pd.DataFrame(matrix), use_container_width=True, key=f"cm_table_{model_name}")
-                    else:
-                        fig = go.Figure(data=go.Heatmap(
-                            z=[[tp, fp], [fn, tn]],
-                            x=["Predicted Positive", "Predicted Negative"],
-                            y=["Actual Positive", "Actual Negative"],
-                            text=[[f"TP: {tp}", f"FP: {fp}"], [f"FN: {fn}", f"TN: {tn}"]],
-                            texttemplate="%{text}",
-                            colorscale="Blues"
-                        ))
-                        fig.update_layout(height=400)
-                        st.plotly_chart(fig, use_container_width=True, key=f"cm_{model_name}")
+# ── Tab 3: Confusion matrices ─────────────────────────────────────────────────
+with tab3:
+    st.caption("Confusion matrices show where your model makes correct vs incorrect predictions.")
+
+    for model_name, result in results.items():
+        if "error" in result or "confusion_matrix" not in result:
+            continue
+
+        cm = result["confusion_matrix"]
+
+        with st.expander(model_name, expanded=False):
+            if "matrix" in cm:
+                st.caption("Multi-class confusion matrix")
+                st.dataframe(
+                    pd.DataFrame(cm["matrix"]),
+                    use_container_width=True,
+                    key=f"cm_table_{model_name}"
+                )
+            else:
+                tp = cm.get("true_positives", 0)
+                fp = cm.get("false_positives", 0)
+                fn = cm.get("false_negatives", 0)
+                tn = cm.get("true_negatives", 0)
+
+                fig = go.Figure(data=go.Heatmap(
+                    z=[[tp, fp], [fn, tn]],
+                    x=["Predicted Positive", "Predicted Negative"],
+                    y=["Actual Positive", "Actual Negative"],
+                    text=[[f"TP: {tp}", f"FP: {fp}"],
+                          [f"FN: {fn}", f"TN: {tn}"]],
+                    texttemplate="%{text}",
+                    colorscale="Blues",
+                    showscale=False,
+                ))
+                fig.update_layout(
+                    height=320,
+                    plot_bgcolor="white",
+                    paper_bgcolor="white",
+                    margin=dict(t=10, b=10),
+                )
+                st.plotly_chart(fig, use_container_width=True, key=f"cm_{model_name}")
+
+                r1, r2, r3, r4 = st.columns(4)
+                r1.metric("True Positives", tp)
+                r2.metric("False Positives", fp)
+                r3.metric("False Negatives", fn)
+                r4.metric("True Negatives", tn)

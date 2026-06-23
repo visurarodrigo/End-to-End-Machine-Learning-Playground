@@ -6,134 +6,96 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from utils import api_client
-
 st.set_page_config(
     page_title="ML Playground",
-    page_icon="🚀",
+    page_icon="🧪",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# Custom CSS
 st.markdown("""
     <style>
-    .main {
-        padding: 2rem;
+    .block-container { padding-top: 2rem; padding-bottom: 2rem; }
+    .feature-header { font-size: 1rem; font-weight: 600; margin-bottom: 0.25rem; }
+    div[data-testid="metric-container"] {
+        background-color: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 1rem;
     }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-st.sidebar.title("🚀 ML Playground")
-st.sidebar.markdown("---")
+# ── Header ──────────────────────────────────────────────────────────────────
+st.title("🧪 ML Playground")
+st.markdown(
+    "An interactive machine learning environment — upload a dataset, "
+    "train models, and compare results across four learning tasks."
+)
+st.divider()
 
-# Check API status
-api_running = api_client.health_check()
-if api_running:
-    st.sidebar.success("✅ API Connected")
-else:
-    st.sidebar.error("❌ API Offline")
-
-st.sidebar.markdown("---")
-
-# Main content
-st.title("🤖 End-to-End Machine Learning Playground")
-st.markdown("""
-### Welcome! 👋
-
-This is your interactive ML lab where you can:
-
-1. **📁 Upload or Sample** - Bring your CSV or test with built-in datasets
-2. **📉 Regression** - Compare Linear, Polynomial, Ridge, and Lasso models
-3. **🎯 Classification** - Train Logistic, Decision Tree, Random Forest, and Neural Networks
-4. **🔍 Unsupervised** - Explore KMeans Clustering and PCA
-
-### Quick Start
-
-1. Go to **Upload** page → Load a dataset (or try a sample)
-2. Pick your learning task → See results instantly
-3. Compare models and get recommendations
-
----
-""")
-
-# Feature cards
-col1, col2, col3 = st.columns(3)
+# ── What you can do ─────────────────────────────────────────────────────────
+col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    st.markdown("""
-    ### 📁 Upload Data
-    - Drag & drop CSV
-    - Auto data preview
-    - Sample datasets ready
-    """)
+    st.markdown("**📁 Upload**")
+    st.caption("Bring your own CSV or load a built-in sample dataset to get started instantly.")
 
 with col2:
-    st.markdown("""
-    ### 📊 Train Models
-    - Instant training
-    - Live metrics
-    - Visual comparisons
-    """)
+    st.markdown("**📉 Regression**")
+    st.caption("Compare Linear, Polynomial, Ridge, and Lasso models on continuous targets.")
 
 with col3:
-    st.markdown("""
-    ### 📈 Get Insights
-    - Performance metrics
-    - Confusion matrices
-    - Variance analysis
-    """)
+    st.markdown("**🎯 Classification**")
+    st.caption("Train Logistic Regression, Decision Tree, and Random Forest classifiers.")
+
+with col4:
+    st.markdown("**🔍 Unsupervised**")
+    st.caption("Explore KMeans clustering and PCA dimensionality reduction.")
 
 st.divider()
 
-# Instructions
-with st.expander("📚 How to Use (Click to expand)", expanded=False):
-    st.markdown("""
-    #### Step 1: Upload Your Dataset
-    - Navigate to the **Upload** page
-    - Either upload your CSV or click a sample dataset button
-    - Preview your data and check for issues
-    
-    #### Step 2: Choose a Task
-    - **Regression** → for predicting continuous values (prices, temperature, etc.)
-    - **Classification** → for binary predictions (yes/no, approved/denied, etc.)
-    - **Unsupervised** → for finding patterns (clusters, dimensionality reduction)
-    
-    #### Step 3: Configure & Run
-    - Select models you want to train
-    - Adjust parameters (if needed)
-    - Click "Train" and watch results appear
-    
-    #### Step 4: Analyze Results
-    - Compare model performance
-    - Review metrics and visualizations
-    - Get recommendations for best model
-    """)
+# ── How to use ──────────────────────────────────────────────────────────────
+st.subheader("Getting Started")
+
+step1, step2, step3, step4 = st.columns(4)
+
+with step1:
+    st.markdown("**Step 1**")
+    st.caption("Go to **Upload** in the sidebar. Upload your CSV or click a sample dataset button.")
+
+with step2:
+    st.markdown("**Step 2**")
+    st.caption("Navigate to the learning task that fits your data — Regression, Classification, or Unsupervised.")
+
+with step3:
+    st.markdown("**Step 3**")
+    st.caption("Select a model, adjust parameters if needed, and click Train.")
+
+with step4:
+    st.markdown("**Step 4**")
+    st.caption("Review metrics, charts, and model comparisons to understand your results.")
 
 st.divider()
 
-# API Status
-st.subheader("API Status")
-if api_running:
-    st.success("✅ **API is running** at http://127.0.0.1:8000")
-    st.caption("Make sure your FastAPI backend is active: `uvicorn app.main:app --reload`")
-else:
-    st.error("❌ **API is not responding**")
-    st.warning("""
-    Start your FastAPI backend:
-    ```bash
-    cd "End to End Machine Learning Playground"
-    uvicorn app.main:app --reload
-    ```
-    Then refresh this page.
-    """)
+# ── Models at a glance ──────────────────────────────────────────────────────
+st.subheader("Models Available")
+
+r_col, c_col, u_col = st.columns(3)
+
+with r_col:
+    st.markdown("**Regression**")
+    st.caption("Linear · Scaled Linear · Polynomial · Ridge · Lasso")
+
+with c_col:
+    st.markdown("**Classification**")
+    st.caption("Logistic Regression · Decision Tree · Random Forest")
+
+with u_col:
+    st.markdown("**Unsupervised**")
+    st.caption("KMeans Clustering · Principal Component Analysis (PCA)")
 
 st.divider()
 
-# Footer
-st.markdown("""
----
-**Built for learning ML workflows from data ingestion to model evaluation.**
-
-Made with ❤️ using Streamlit + FastAPI
-""")
+# ── Footer ──────────────────────────────────────────────────────────────────
+st.caption("Built with Streamlit · scikit-learn · pandas · plotly")

@@ -15,6 +15,6 @@ six==1.17.0
 threadpoolctl==3.6.0
 typing_extensions==4.15.0
 tzdata==2025.3
-streamlit==1.32.0
+streamlit==1.40.0
 plotly==5.22.0
 matplotlib==3.8.4
