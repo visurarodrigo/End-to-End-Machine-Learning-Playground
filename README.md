@@ -78,7 +78,7 @@ streamlit_app/
 ![Home Page](streamlit_app/Screen%20Shots/home%20page.png)
 
 ### Upload
-![Upload Page](streamlit_app/Screen%20Shots/upload%20Ccsv%20page.png)
+![Upload Page](streamlit_app/Screen%20Shots/upload%20csv%20page.png)
 
 ### Regression
 ![Regression Page](streamlit_app/Screen%20Shots/Regression%20page.png)
