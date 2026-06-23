@@ -111,9 +111,7 @@ streamlit_app/
 
 ---
 
-<<<<<<< HEAD
-## 👤 Connect with Me
+👤 Connect with Me
 Built by **Visura Rodrigo**  
-=======
-Author - Visura Rodrigo
->>>>>>> 6a21b1f8c8a9f508ff135bf5cdf65e97c8c54e4e
+
+
